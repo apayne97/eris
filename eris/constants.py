@@ -1,0 +1,3 @@
+from units import ACCELERATION
+
+GRAVITY = 9.81 * ACCELERATION
