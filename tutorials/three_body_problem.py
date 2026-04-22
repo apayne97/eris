@@ -209,6 +209,12 @@ def _(mo):
     time_header = mo.md("**Simulation time**")
     time_end_slider = mo.ui.slider(1, 50, value=10, step=1, label="t end")
 
+    # --- Sensitivity sweep ---
+    sweep_header = mo.md("**Sensitivity sweep (p1x only)**")
+    p1x_sweep_min = mo.ui.number(value=0.8, step=0.01, label="p1x min")
+    p1x_sweep_max = mo.ui.number(value=1.2, step=0.01, label="p1x max")
+    p1x_sweep_points = mo.ui.slider(10, 300, value=80, step=5, label="samples")
+
     # --- Initial Positions ---
     pos_header = mo.md("**Initial Positions**")
     p1x = mo.ui.number(value=1.0, step=0.1, label="p1x")
@@ -236,6 +242,7 @@ def _(mo):
     mo.vstack([
         mo.hstack([mass_header, m1_slider, m2_slider, m3_slider], justify="start"),
         mo.hstack([time_header, time_end_slider], justify="start"),
+        mo.hstack([sweep_header, p1x_sweep_min, p1x_sweep_max, p1x_sweep_points], justify="start"),
         mo.hstack([pos_header,
                    mo.vstack([p1x, p1y, p1z]),
                    mo.vstack([p2x, p2y, p2z]),
@@ -250,6 +257,9 @@ def _(mo):
         m2_slider,
         m3_slider,
         p1x,
+        p1x_sweep_max,
+        p1x_sweep_min,
+        p1x_sweep_points,
         p1y,
         p1z,
         p2x,
@@ -384,8 +394,103 @@ def _(
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    #### 5. Plotting the results
+    #### 5. Sensitivity to initial conditions (x-coordinate)
+    This sweep varies only the initial `p1x` and records the final `p1x`.
     """)
+    return
+
+
+@app.cell
+def _(
+    m1_slider,
+    m2_slider,
+    m3_slider,
+    np,
+    p1x_sweep_max,
+    p1x_sweep_min,
+    p1x_sweep_points,
+    p1y,
+    p1z,
+    p2x,
+    p2y,
+    p2z,
+    p3x,
+    p3y,
+    p3z,
+    solve_ivp,
+    system_odes,
+    time_end_slider,
+    v1x,
+    v1y,
+    v1z,
+    v2x,
+    v2y,
+    v2z,
+    v3x,
+    v3y,
+    v3z,
+):
+    m1 = m1_slider.value
+    m2 = m2_slider.value
+    m3 = m3_slider.value
+    time_e = time_end_slider.value
+
+    x0_min = min(p1x_sweep_min.value, p1x_sweep_max.value)
+    x0_max = max(p1x_sweep_min.value, p1x_sweep_max.value)
+    p1x_initial_values = np.linspace(x0_min, x0_max, p1x_sweep_points.value)
+    p1x_final_values = []
+
+    for x0 in p1x_initial_values:
+        initial_conditions = np.array([
+            [x0, p1y.value, p1z.value],
+            [p2x.value, p2y.value, p2z.value],
+            [p3x.value, p3y.value, p3z.value],
+            [v1x.value, v1y.value, v1z.value],
+            [v2x.value, v2y.value, v2z.value],
+            [v3x.value, v3y.value, v3z.value],
+        ]).ravel()
+
+        # Only evaluate the final time for speed.
+        solution = solve_ivp(
+            fun=system_odes,
+            t_span=(0, time_e),
+            y0=initial_conditions,
+            t_eval=[time_e],
+            args=(m1, m2, m3),
+            method="RK45",
+            rtol=1e-8,
+            atol=1e-8,
+        )
+
+        if solution.success and solution.y.shape[1] > 0:
+            p1x_final_values.append(solution.y[0, -1])
+        else:
+            p1x_final_values.append(np.nan)
+
+    return p1x_initial_values, np.array(p1x_final_values)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    #### 6. Plotting the trajectories
+    """)
+    return
+
+
+@app.cell
+def _(
+    p1x_final_values,
+    p1x_initial_values,
+    plt,
+):
+    fig, ax = plt.subplots()
+    ax.plot(p1x_initial_values, p1x_final_values, color="purple", linewidth=1.5)
+    ax.set_title("Sensitivity: final p1x vs initial p1x")
+    ax.set_xlabel("initial p1x")
+    ax.set_ylabel("final p1x")
+    ax.grid(True, alpha=0.3)
+    plt.gca()
     return
 
 
