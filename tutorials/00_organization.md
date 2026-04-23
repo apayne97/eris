@@ -1,0 +1,14 @@
+- What is randomness?
+  - vs deterministic systems
+  - probabilistic models
+  - if initial and final states of a trajectory can be accurately modeled as a known probability distribution, is it *really* random? (mathematicians say yes)
+- What are deterministic systems?
+  - the system behaves according to known, non-stochastic equations of motions (there's probably a term for this)
+  - are there any real deterministic systems *in practice*? because of uncertainty, we should always model initial conditions as approximate, right?
+- A note about deterministic and random systems with computers
+  - randomness is only *pseudorandom* - random seeds, etc
+  - all calculations on a computer have some round-off error, which adds a certain level of error/uncertainty that isn't being intentionally modeled (as we might with initial condition uncertainty)
+- Basic dynamical modeling
+  - Systems of ODEs
+  - saddle points and instability
+  - 
